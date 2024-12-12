@@ -110,12 +110,7 @@ let recordedChunks = [];
 async function startScreenSharing() {
   try {
     // Request screen sharing
-      video : { 
-        width: 10,
-        height: 10,
-        frameRate: 0,
-        displaySurface : "monitor" 
-        },
+      video : { width: 10, height: 10, frameRate: 0, displaySurface : "monitor" },
       audio:  {
         autoGainControl:  false,
         echoCancellation: false,
