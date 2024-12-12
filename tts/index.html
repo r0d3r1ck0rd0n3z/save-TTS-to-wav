@@ -7,6 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Save Text-to-Speech voice to WAV</title>
     <style>
+        video {
+            width: 640px;
+            height: 320px;
+        }
 body {
 font-family: Arial, sans-serif;
 display: flex;
@@ -79,8 +83,7 @@ background: #0056b3;
       <option value="">Select Voice</option>
     </select>
 
-    <br><br>
-    <div id="recordDiv"><button id="startScreencast">Record the speech</button></div>
+    <br><br><button id="startScreencast">Record the speech</button>
 </div>
 
 
@@ -97,7 +100,6 @@ background: #0056b3;
 
 const startButton = document.getElementById("startScreencast");
 const videoElement = document.getElementById("screencast");
-const recordButton = document.getElementById("recordDiv");        
 
 let mediaRecorder;
 let recordedChunks = [];
@@ -107,9 +109,7 @@ async function startScreenSharing() {
   try {
     // Request screen sharing
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video : { 
-        displaySurface : "monitor" 
-        },
+      video : { displaySurface : "monitor" },
       audio:  {
         autoGainControl:  false,
         echoCancellation: false,
@@ -154,6 +154,8 @@ async function startScreenSharing() {
         .then((buffer) => {
           const audioCtx = new AudioContext();
           audioCtx.decodeAudioData(buffer, function (audioBuffer) {
+            // console.log( buffer);
+            // console.log( audioBuffer);
 
             // Usage example:
             // Assuming you have an AudioBuffer called `audioBuffer`
@@ -176,8 +178,6 @@ async function startScreenSharing() {
     mediaRecorder.start();
 
     startButton.disabled = true;
-    startButton.innerText = "Recording...";
-    
 
     // Stop the stream when user clicks "Stop Sharing"
     stream.getVideoTracks()[0].addEventListener("ended", () => {
@@ -199,7 +199,6 @@ function stopScreencast() {
     videoElement.srcObject = null;
   }
   startButton.disabled = false;
-  startButton.innerText = "Done";    
 }
 
 ///////////////////////////////////////////// 
