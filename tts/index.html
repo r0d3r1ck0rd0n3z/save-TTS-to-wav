@@ -108,9 +108,6 @@ async function startScreenSharing() {
     // Request screen sharing
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video : { 
-        width: 0,
-        height: 0,
-        frameRate: 0,
         displaySurface : "monitor" 
         },
       audio:  {
