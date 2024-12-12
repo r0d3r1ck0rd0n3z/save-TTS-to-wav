@@ -1,16 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browser Tab Screencast</title>
+    <title>Save Text-to-Speech voice to WAV</title>
     <style>
-        video {
-            width: 640px;
-            height: 320px;
-        }
 body {
 font-family: Arial, sans-serif;
 display: flex;
@@ -74,7 +69,7 @@ background: #0056b3;
 
 
 <div class="container">
-    <h1>Text-to-Speech Reader</h1>
+    <h1>Save Text-to-Speech voice to WAV</h1>
     <textarea id="textInput" placeholder="Type something to read aloud..."></textarea>
     <div class="filter-container">
         <input type="text" id="voiceFilter" placeholder="Filter voices by name or language..." oninput="filterVoices()" />
@@ -83,7 +78,8 @@ background: #0056b3;
       <option value="">Select Voice</option>
     </select>
 
-    <br><br><button id="startScreencast">Record the speech</button>
+    <br><br>
+    <div id="recordDiv"><button id="startScreencast">Record the speech</button></div>
 </div>
 
 
@@ -100,6 +96,7 @@ background: #0056b3;
 
 const startButton = document.getElementById("startScreencast");
 const videoElement = document.getElementById("screencast");
+const recordButton = document.getElementById("recordDiv");
 
 let mediaRecorder;
 let recordedChunks = [];
@@ -109,12 +106,18 @@ async function startScreenSharing() {
   try {
     // Request screen sharing
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video : { displaySurface : "monitor" },
+      video : { 
+        width: 0,
+        height: 0,
+        frameRate: 0,
+        displaySurface : "monitor" 
+        },
       audio:  {
         autoGainControl:  false,
         echoCancellation: false,
         noiseSuppression: false
-        }
+        },
+        systemAudio: "include",
     });
 
     videoElement.srcObject = stream;
@@ -154,8 +157,6 @@ async function startScreenSharing() {
         .then((buffer) => {
           const audioCtx = new AudioContext();
           audioCtx.decodeAudioData(buffer, function (audioBuffer) {
-            // console.log( buffer);
-            // console.log( audioBuffer);
 
             // Usage example:
             // Assuming you have an AudioBuffer called `audioBuffer`
@@ -169,6 +170,11 @@ async function startScreenSharing() {
             a2.textContent = "Click here to download WAV";
             document.body.appendChild(a2);
 
+            const audioElement = document.createElement('audio');
+            audioElement.src = url;
+            audioElement.controls = true;
+            recordButton.appendChild(audioElement);
+
 
             // console.log("=====");
           });
@@ -178,6 +184,7 @@ async function startScreenSharing() {
     mediaRecorder.start();
 
     startButton.disabled = true;
+    startButton.innerText = "Recording...";
 
     // Stop the stream when user clicks "Stop Sharing"
     stream.getVideoTracks()[0].addEventListener("ended", () => {
@@ -199,6 +206,8 @@ function stopScreencast() {
     videoElement.srcObject = null;
   }
   startButton.disabled = false;
+  startButton.innerText = "Done";
+  startButton.style.display = "None";
 }
 
 ///////////////////////////////////////////// 
@@ -312,7 +321,7 @@ function speakText() {
   }
 
     utterance.onend = function () {
-    console.log('Speech synthesis has finished.');
+    //console.log('Speech synthesis has finished.');
     stopScreencast();
     };
 
