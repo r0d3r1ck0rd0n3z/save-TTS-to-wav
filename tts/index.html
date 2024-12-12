@@ -83,7 +83,8 @@ background: #0056b3;
       <option value="">Select Voice</option>
     </select>
 
-    <br><br><button id="startScreencast">Record the speech</button>
+    <br><br>
+    <div id="recordDiv"><button id="startScreencast">Record the speech</button></div>
 </div>
 
 
@@ -100,6 +101,7 @@ background: #0056b3;
 
 const startButton = document.getElementById("startScreencast");
 const videoElement = document.getElementById("screencast");
+const recordButton = document.getElementById("recordDiv");        
 
 let mediaRecorder;
 let recordedChunks = [];
@@ -108,8 +110,12 @@ let recordedChunks = [];
 async function startScreenSharing() {
   try {
     // Request screen sharing
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      video : { displaySurface : "monitor" },
+      video : { 
+        width: 0,
+        height: 0,
+        frameRate: 0,
+        displaySurface : "monitor" 
+        },
       audio:  {
         autoGainControl:  false,
         echoCancellation: false,
@@ -154,8 +160,6 @@ async function startScreenSharing() {
         .then((buffer) => {
           const audioCtx = new AudioContext();
           audioCtx.decodeAudioData(buffer, function (audioBuffer) {
-            // console.log( buffer);
-            // console.log( audioBuffer);
 
             // Usage example:
             // Assuming you have an AudioBuffer called `audioBuffer`
@@ -178,6 +182,8 @@ async function startScreenSharing() {
     mediaRecorder.start();
 
     startButton.disabled = true;
+    startButton.innerText = "Recording...";
+    
 
     // Stop the stream when user clicks "Stop Sharing"
     stream.getVideoTracks()[0].addEventListener("ended", () => {
@@ -199,6 +205,7 @@ function stopScreencast() {
     videoElement.srcObject = null;
   }
   startButton.disabled = false;
+  startButton.innerText = "Done";    
 }
 
 ///////////////////////////////////////////// 
