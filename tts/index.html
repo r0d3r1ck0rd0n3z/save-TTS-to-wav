@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browser Tab Screencast</title>
+    <title>Save Text-to-Speech voice to WAV</title>
     <style>
         video {
             width: 640px;
@@ -74,7 +74,7 @@ background: #0056b3;
 
 
 <div class="container">
-    <h1>Text-to-Speech Reader</h1>
+    <h1>Save Text-to-Speech voice to WAV</h1>
     <textarea id="textInput" placeholder="Type something to read aloud..."></textarea>
     <div class="filter-container">
         <input type="text" id="voiceFilter" placeholder="Filter voices by name or language..." oninput="filterVoices()" />
@@ -111,8 +111,8 @@ async function startScreenSharing() {
   try {
     // Request screen sharing
       video : { 
-        width: 0,
-        height: 0,
+        width: 10,
+        height: 10,
         frameRate: 0,
         displaySurface : "monitor" 
         },
