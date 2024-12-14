@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Text-to-Speech voice to WAV</title>
+    <style>
+body {
+font-family: Arial, sans-serif;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+height: 100vh;
+margin: 0;
+background: #f0f8ff;
+}
+h1 {
+color: #333;
+}
+.container {
+text-align: center;
+width: 80%;
+max-width: 600px;
+}
+textarea {
+width: 100%;
+height: 150px;
+padding: 10px;
+font-size: 16px;
+margin-bottom: 20px;
+border: 2px solid #ccc;
+border-radius: 5px;
+resize: none;
+}
+.filter-container {
+margin-bottom: 20px;
+}
+input[type="text"] {
+width: 100%;
+padding: 10px;
+font-size: 16px;
+border: 2px solid #ccc;
+border-radius: 5px;
+}
+select {
+width: 100%;
+padding: 10px;
+font-size: 16px;
+margin-bottom: 20px;
+}
+button {
+background: #007bff;
+color: white;
+padding: 10px 20px;
+font-size: 16px;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+}
+button:hover {
+background: #0056b3;
+}
+    </style>
+</head>
+
+<body>
+
+
+<div class="container">
+    <h1>Save Text-to-Speech voice to WAV</h1>
+    <textarea id="textInput" placeholder="Type something to read aloud..."></textarea>
+    <div class="filter-container">
+        <input type="text" id="voiceFilter" placeholder="Filter voices by name or language..." oninput="filterVoices()" />
+    </div>
+    <select id="voiceSelect">
+      <option value="">Select Voice</option>
+    </select>
+
+    <br><br>
+    <div id="recordDiv"><button id="startScreencast">Record the speech</button></div>
+</div>
+
+
+<div hidden>
+    <video id="screencast" autoplay muted controls hidden></video>
+        <button onclick="speakText()" hidden>Speak</button>
+</div>
+
+    <br><br><br><br>
+
+    <!-- //////////////////////////////// SCRIPT START ////////////////////////////////  -->
+
+    <script>
+
+const startButton = document.getElementById("startScreencast");
+const videoElement = document.getElementById("screencast");
+const recordButton = document.getElementById("recordDiv");
+
+let mediaRecorder;
+let recordedChunks = [];
+
+
+async function startScreenSharing() {
+  try {
+    // Request screen sharing
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video : { displaySurface : "monitor" },
+      audio:  {
+        autoGainControl:  false,
+        echoCancellation: false,
+        noiseSuppression: false
+        }
+    });
+
+    videoElement.srcObject = stream;
+
+    // Prepare to record the stream
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    speakText();
+
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+
+      // Create a download link for the recording
+      const a = document.createElement("a");
+      a.href = url;
+      a.textContent = "Click here to download WEBM";
+      a.download = "screencast.webm";
+      document.body.appendChild(a);
+
+      
+      // add a br tag
+      const br = document.createElement("br");
+      document.body.appendChild(br);
+      document.body.appendChild(br.cloneNode())
+
+      // https://byte-explorer.medium.com/use-javascript-to-extract-audio-resources-from-videos-4a48234cfddf
+
+      fetch(url)
+        .then((res) => res.arrayBuffer())
+        .then((buffer) => {
+          const audioCtx = new AudioContext();
+          audioCtx.decodeAudioData(buffer, function (audioBuffer) {
+
+            // Usage example:
+            // Assuming you have an AudioBuffer called `audioBuffer`
+            const wavBlob = audioBufferToWav(audioBuffer);
+
+            // Create a download link
+            const url = URL.createObjectURL(wavBlob);
+            const a2 = document.createElement("a");
+            a2.href = url;
+            a2.download = "output.wav";           
+            a2.textContent = "Click here to download WAV";
+            document.body.appendChild(a2);
+
+            const audioElement = document.createElement('audio');
+            audioElement.src = url;
+            audioElement.controls = true;
+            recordButton.appendChild(audioElement);
+
+
+            // console.log("=====");
+          });
+        });
+    };
+
+
+    mediaRecorder.start();
+
+    startButton.disabled = true;
+    startButton.innerText = "Recording...";
+
+    // Stop the stream when user clicks "Stop Sharing"
+    stream.getVideoTracks()[0].addEventListener("ended", () => {
+      stopScreencast();
+    });
+  } catch (error) {
+    console.error("Error capturing screencast:", error);
+  }
+};
+
+
+function stopScreencast() {
+  if (mediaRecorder && mediaRecorder.state === "recording") {
+    mediaRecorder.stop();
+  }
+  const stream = videoElement.srcObject;
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+    videoElement.srcObject = null;
+  }
+  startButton.disabled = false;
+  startButton.innerText = "Done";
+  startButton.style.display = "None";
+}
+
+///////////////////////////////////////////// 
+// Function to extract audio from WEBM video
+
+function audioBufferToWav(audioBuffer) {
+  const numOfChannels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const format = 1; // PCM format
+  const bitDepth = 16;
+
+  let length = audioBuffer.length * numOfChannels * (bitDepth / 8) + 44;
+  const buffer = new ArrayBuffer(length);
+  const view = new DataView(buffer);
+
+  // Write WAV header
+  let offset = 0;
+  function writeString(str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset++, str.charCodeAt(i));
+    }
+  }
+
+  writeString("RIFF"); // ChunkID
+  view.setUint32(offset, length - 8, true);
+  offset += 4; // ChunkSize
+  writeString("WAVE"); // Format
+  writeString("fmt "); // Subchunk1ID
+  view.setUint32(offset, 16, true);
+  offset += 4; // Subchunk1Size
+  view.setUint16(offset, format, true);
+  offset += 2; // AudioFormat
+  view.setUint16(offset, numOfChannels, true);
+  offset += 2; // NumChannels
+  view.setUint32(offset, sampleRate, true);
+  offset += 4; // SampleRate
+  view.setUint32(offset, sampleRate * numOfChannels * (bitDepth / 8), true);
+  offset += 4; // ByteRate
+  view.setUint16(offset, numOfChannels * (bitDepth / 8), true);
+  offset += 2; // BlockAlign
+  view.setUint16(offset, bitDepth, true);
+  offset += 2; // BitsPerSample
+  writeString("data"); // Subchunk2ID
+  view.setUint32(offset, length - 44, true);
+  offset += 4; // Subchunk2Size
+
+  // Write PCM samples
+  const channelData = [];
+  for (let i = 0; i < numOfChannels; i++) {
+    channelData.push(audioBuffer.getChannelData(i));
+  }
+  const interleaved = new Float32Array(audioBuffer.length * numOfChannels);
+
+  for (let i = 0; i < audioBuffer.length; i++) {
+    for (let channel = 0; channel < numOfChannels; channel++) {
+      interleaved[i * numOfChannels + channel] = channelData[channel][i];
+    }
+  }
+
+  for (let i = 0; i < interleaved.length; i++) {
+    const sample = Math.max(-1, Math.min(1, interleaved[i]));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    offset += 2;
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+
+
+////////////////////////////////////////////////
+
+
+const voiceSelect = document.getElementById("voiceSelect");
+const voiceFilter = document.getElementById("voiceFilter");
+let voices = [];
+
+function populateVoiceList() {
+  voices = window.speechSynthesis.getVoices();
+  updateVoiceList();
+}
+
+function updateVoiceList(filter = "") {
+  const filteredVoices = voices.filter(voice => 
+    voice.name.toLowerCase().includes(filter.toLowerCase()) ||
+    voice.lang.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  voiceSelect.innerHTML = filteredVoices.map(
+    (voice, index) => `<option value="${voices.indexOf(voice)}">${voice.name} (${voice.lang})</option>`
+  ).join("");
+}
+
+function filterVoices() {
+  const filterText = voiceFilter.value;
+  updateVoiceList(filterText);
+}
+
+function speakText() {
+  const textInput = document.getElementById("textInput").value;
+  if (!textInput) {
+    alert("Please enter some text to read aloud.");
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(textInput);
+  const selectedVoiceIndex = voiceSelect.value;
+
+  if (selectedVoiceIndex) {
+    utterance.voice = voices[selectedVoiceIndex];
+  }
+
+    utterance.onend = function () {
+    console.log('Speech synthesis has finished.');
+    stopScreencast();
+    };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+// Populate voices on load
+window.speechSynthesis.onvoiceschanged = populateVoiceList;
+populateVoiceList();
+
+
+startButton.addEventListener("click", startScreenSharing);
+</script>
+</body>
+</html>
